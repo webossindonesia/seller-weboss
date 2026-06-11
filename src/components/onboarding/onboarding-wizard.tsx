@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check } from "lucide-react";
 import { toast } from "sonner";
@@ -51,7 +51,6 @@ function newProduct(partial?: Partial<DraftProduct>): DraftProduct {
 }
 
 export function OnboardingWizard({ firstName }: { firstName: string }) {
-  const router = useRouter();
   const [step, setStep] = useState<Step>("method");
   const [state, setState] = useState<OnboardingState>(createInitialState);
   const [submitting, setSubmitting] = useState(false);
@@ -149,11 +148,8 @@ export function OnboardingWizard({ firstName }: { firstName: string }) {
         setSubmitting(false);
         return;
       }
-
-      toast.success("Tokomu sudah siap! 🎉");
-      router.push("/dashboard");
-      router.refresh();
-    } catch {
+    } catch (error) {
+      if (isRedirectError(error)) throw error;
       toast.error("Terjadi kesalahan. Coba lagi.");
       setSubmitting(false);
     }

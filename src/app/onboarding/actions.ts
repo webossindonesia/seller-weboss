@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/utils";
 import { getPlan } from "@/lib/plans";
@@ -29,6 +31,19 @@ export async function completeOnboarding(
 
   if (userError || !user) {
     return { ok: false, error: "Sesi tidak valid. Silakan masuk lagi." };
+  }
+
+  const { data: existingStore } = await supabase
+    .from("stores")
+    .select("id")
+    .eq("owner_id", user.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (existingStore) {
+    revalidatePath("/dashboard");
+    revalidatePath("/onboarding");
+    redirect("/dashboard");
   }
 
   // Build a unique slug + subdomain.
@@ -111,5 +126,7 @@ export async function completeOnboarding(
     .update({ onboarding_completed: true })
     .eq("id", user.id);
 
-  return { ok: true, storeId: store.id };
+  revalidatePath("/dashboard");
+  revalidatePath("/onboarding");
+  redirect("/dashboard");
 }
